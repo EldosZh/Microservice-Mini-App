@@ -1,0 +1,11 @@
+.env
+*.exe
+*.out
+*.log
+.idea/
+.vscode/
+.DS_Store
+coverage.out
+coverage.html
+/bin/
+.cache/

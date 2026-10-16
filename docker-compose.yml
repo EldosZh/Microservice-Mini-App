@@ -1,0 +1,75 @@
+services:
+  user-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    volumes: [user-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d users_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  product-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    volumes: [product-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d products_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  order-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    volumes: [order-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d orders_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  user-service:
+    build:
+      context: .
+      args: {SERVICE: user-service}
+    environment:
+      PORT: "8081"
+      DATABASE_URL: postgres://app:app@user-db:5432/users_db?sslmode=disable
+    ports: ["8081:8081"]
+    depends_on:
+      user-db: {condition: service_healthy}
+  product-service:
+    build:
+      context: .
+      args: {SERVICE: product-service}
+    environment:
+      PORT: "8082"
+      DATABASE_URL: postgres://app:app@product-db:5432/products_db?sslmode=disable
+    ports: ["8082:8082"]
+    depends_on:
+      product-db: {condition: service_healthy}
+  order-service:
+    build:
+      context: .
+      args: {SERVICE: order-service}
+    environment:
+      PORT: "8083"
+      DATABASE_URL: postgres://app:app@order-db:5432/orders_db?sslmode=disable
+      USER_SERVICE_URL: http://user-service:8081
+      PRODUCT_SERVICE_URL: http://product-service:8082
+    ports: ["8083:8083"]
+    depends_on:
+      order-db: {condition: service_healthy}
+      user-service: {condition: service_started}
+      product-service: {condition: service_started}
+volumes:
+  user-data:
+  product-data:
+  order-data:
